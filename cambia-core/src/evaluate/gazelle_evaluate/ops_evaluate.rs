@@ -67,7 +67,9 @@ impl OpsEvaluator {
             GazelleDeductionRelease::NullDrive => parsed_log.drive.to_lowercase().contains("(null) (null) (revision (null))"),
             GazelleDeductionRelease::IncorrectReadOffset => {
                 match DriveUtils::fuzzy_search_model(parsed_log.drive.clone()) {
-                    DriveMatchQuality::STRONG(matched_offsets) => {
+                    // Exact and near matches are judged alike, matching upstream OPS behaviour:
+                    // the log's offset must appear among the offsets registered for the matched model
+                    DriveMatchQuality::Exact(matched_offsets) | DriveMatchQuality::Strong(matched_offsets) => {
                         match parsed_log.read_offset {
                             Some(read_offset) => {
                                 let mut known = matched_offsets.iter().flatten().peekable();
@@ -76,17 +78,24 @@ impl OpsEvaluator {
                             None => false,
                         }
                     }
-                    DriveMatchQuality::WEAK(_) => {
+                    DriveMatchQuality::Weak(_) => {
                         false
                     },
                 }
             },
             GazelleDeductionRelease::DriveNotFoundDb => {
                 match DriveUtils::fuzzy_search_model(parsed_log.drive.clone()) {
-                    DriveMatchQuality::STRONG(matched_offsets) => {
+                    // The model is in the database: stop reporting it as missing.
+                    // Keep the signal only when the database has no agreed offset
+                    // yet the log claims an offset of 0 (the uncalibrated default).
+                    DriveMatchQuality::Exact(matched_offsets) => {
+                        matched_offsets.iter().all(|offset| offset.is_none())
+                            && parsed_log.read_offset == Some(0)
+                    }
+                    DriveMatchQuality::Strong(matched_offsets) => {
                         matched_offsets.iter().all(|offset| offset.is_none())
                     }
-                    DriveMatchQuality::WEAK(_) => {
+                    DriveMatchQuality::Weak(_) => {
                         parsed_log.read_offset.is_some() && parsed_log.read_offset.unwrap() == 0
                     },
                 }

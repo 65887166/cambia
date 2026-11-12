@@ -84,8 +84,8 @@ impl Sha256Custom {
         }
 
         let mut encrypted_bytes: Vec<u8> = Vec::new();
-        for i in 0..self.state.len() {
-            encrypted_bytes.extend(self.state[i].to_be_bytes());
+        for word in self.state.iter() {
+            encrypted_bytes.extend(word.to_be_bytes());
         }
 
         hex::encode(encrypted_bytes)

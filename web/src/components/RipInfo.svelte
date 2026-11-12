@@ -71,6 +71,29 @@
 	});
 
 	const chipClass = 'preset-tonal-primary rounded-md text-xs px-2 py-1 font-semibold';
+
+	// Mirrors `OpsEvaluator::is_image_rip()` in the Rust evaluator: EAC writes a
+	// single `Range status and errors` block when the whole disc is extracted into
+	// one file, and such a log carries no gap handling line at all.
+	const isEacImageRip = $derived.by(() => {
+		if (parsedLog.ripper !== 'Exact Audio Copy') return false;
+
+		const tracks = parsedLog.tracks;
+		if (tracks.length !== 1 || !tracks[0].is_range) return false;
+
+		const entries = parsedLog.toc.raw.entries;
+		if (entries.length === 0) return false;
+
+		const first = entries[0];
+		const last = entries[entries.length - 1];
+
+		return first.start_sector === 0 && parsedLog.toc.raw.lead_out === last.end_sector + 1;
+	});
+
+	// For an image rip the gap handling genuinely cannot be verified, but no
+	// evaluation unit is produced (the rule is exempted, so the score stays at
+	// 100). Mark the field anyway so "Unknown" is not shown as a green tick.
+	const gapUnverifiable = $derived(isEacImageRip && parsedLog.gap_handling === 'Unknown');
 </script>
 
 <Card header="Rip Info">
@@ -128,7 +151,7 @@
 			icon={IconWorkspace}
 			header="Gap handling"
 			value={parsedLog.gap_handling}
-			valueOk={evMap['Gap']}
+			valueOk={evMap['Gap'] > 0 || gapUnverifiable ? 1 : 0}
 		/>
 		<InfoSegment
 			icon={IconShowDataCards}

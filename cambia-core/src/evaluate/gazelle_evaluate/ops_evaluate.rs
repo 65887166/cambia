@@ -32,6 +32,38 @@ impl OpsEvaluator {
         Self
     }
 
+    /// Whether the disc was extracted into a single file ("image" rip).
+    ///
+    /// EAC writes one `Range status and errors` block when the whole disc goes
+    /// into a single output file, and one `Track N ...` block per track when it
+    /// is split. The parser marks the former as `is_range`, and the TOC of an
+    /// image rip starts at sector 0 and ends at the lead-out.
+    ///
+    /// Caveat: extracting a *subset* of the disc into one file has the same
+    /// shape, so it is treated as an image rip as well. The TOC start/end check
+    /// only rejects the cases where the log itself covers a shorter span.
+    fn is_image_rip(parsed_log: &ParsedLog) -> bool {
+        if parsed_log.ripper != Ripper::EAC {
+            return false;
+        }
+
+        if parsed_log.tracks.len() != 1 || !parsed_log.tracks[0].is_range {
+            return false;
+        }
+
+        let entries = &parsed_log.toc.raw.entries;
+        let first = match entries.first() {
+            Some(entry) => entry,
+            None => return false,
+        };
+        let last_end = match entries.last() {
+            Some(entry) => entry.end_sector,
+            None => return false,
+        };
+
+        first.start_sector == 0 && parsed_log.toc.raw.lead_out == last_end + 1
+    }
+
     pub fn check_fail(parsed_log: &ParsedLog, data: GazelleDeductionFail) -> bool {
         match data {
             GazelleDeductionFail::UnknownEncoding => false,
@@ -116,15 +148,19 @@ impl OpsEvaluator {
             GazelleDeductionRelease::CouldNotVerifyMissingOffsetSamples => parsed_log.ripper == Ripper::EAC && parsed_log.fill_silence == Quartet::Unknown,
             GazelleDeductionRelease::CouldNotVerifySilentBlocks => parsed_log.delete_silence == Quartet::Unknown, 
             GazelleDeductionRelease::CouldNotVerifyNullSamples => parsed_log.use_null_samples == Quartet::Unknown,
-            GazelleDeductionRelease::CouldNotVerifyGapHandling => parsed_log.gap_handling == Gap::Unknown,
+            // An image rip has no gap handling to verify: EAC does not print the
+            // line at all, so `Unknown` here is expected and not a defect
+            GazelleDeductionRelease::CouldNotVerifyGapHandling => !OpsEvaluator::is_image_rip(parsed_log) && parsed_log.gap_handling == Gap::Unknown,
             GazelleDeductionRelease::CouldNotVerifyId3 => parsed_log.id3_enabled == Quartet::Unknown,
             GazelleDeductionRelease::CouldNotVerifyAlbumGain => false, // TODO: XLD specific prop, does not affect scoring
             GazelleDeductionRelease::RippedWithCompressionOffset => false, // TODO: EAC specific prop, does not affect scoring
             GazelleDeductionRelease::RangeRip => {
-                if parsed_log.ripper != Ripper::EAC {
+                // Single-file ("image") extraction of the whole disc is not a
+                // range rip, so it must not be penalised as one
+                if parsed_log.ripper != Ripper::EAC || OpsEvaluator::is_image_rip(parsed_log) {
                     return false;
                 }
-                
+
                 for track in parsed_log.tracks.iter() {
                     if track.is_range {
                         return true;

@@ -18,8 +18,12 @@ pub static VENDOR_SUB_VALS: &[&str] = &["LITEON", "LG ELECTRONICS", "PANASONIC"]
 static DISTANCE_THRESHOLD: usize = 5;
 
 pub enum DriveMatchQuality {
-    STRONG(Vec<Option<i16>>),
-    WEAK(Vec<Option<i16>>),
+    /// Exact match against a database entry (edit distance 0)
+    Exact(Vec<Option<i16>>),
+    /// Near miss (1..=DISTANCE_THRESHOLD): probably a different model
+    Strong(Vec<Option<i16>>),
+    /// Beyond the threshold: the model is most likely absent from the database
+    Weak(Vec<Option<i16>>),
 }
 
 pub struct DriveUtils;
@@ -81,10 +85,12 @@ impl DriveUtils {
             matched_offsets
         );
 
-        if distance > DISTANCE_THRESHOLD {
-            DriveMatchQuality::WEAK(matched_offsets)
+        if distance == 0 {
+            DriveMatchQuality::Exact(matched_offsets)
+        } else if distance <= DISTANCE_THRESHOLD {
+            DriveMatchQuality::Strong(matched_offsets)
         } else {
-            DriveMatchQuality::STRONG(matched_offsets)
+            DriveMatchQuality::Weak(matched_offsets)
         }
     }
 }

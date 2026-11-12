@@ -410,7 +410,7 @@ pub static VND_ASMEDIA: [(&'static str, &'static Option<i16>); 1] = [
     (r#"ASMEDIAASM105X"#, &Some(6_i16))
 ];
 
-pub static VND_ASUS: [(&'static str, &'static Option<i16>); 172] = [
+pub static VND_ASUS: [(&'static str, &'static Option<i16>); 173] = [
     (r#"ASUS"#, &Some(6_i16)),
     (r#"ASUSBC06B1ST"#, &Some(6_i16)),
     (r#"ASUSBC08B1LT"#, &Some(6_i16)),
@@ -431,6 +431,7 @@ pub static VND_ASUS: [(&'static str, &'static Option<i16>); 172] = [
     (r#"ASUSBW12D1SU"#, &Some(667_i16)),
     (r#"ASUSBW14D1XT"#, &Some(6_i16)),
     (r#"ASUSBW16D1HT"#, &Some(6_i16)),
+    (r#"ASUSBW16D1HU"#, &None),
     (r#"ASUSCB5216A"#, &Some(6_i16)),
     (r#"ASUSCDS400A"#, &Some(1194_i16)),
     (r#"ASUSCDS450A"#, &Some(1194_i16)),

@@ -27,6 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          repository: ${{ github.repository }}
           ref: ${{ inputs.tag || github.ref }}
 
       # A release is only ever cut from a version bump, so the tag and the
@@ -79,6 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          repository: ${{ github.repository }}
           ref: ${{ inputs.tag || github.ref }}
 
       - name: Download static site files
@@ -113,6 +115,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          repository: ${{ github.repository }}
           ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
 

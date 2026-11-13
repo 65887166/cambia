@@ -118,7 +118,7 @@
 		</div>
 	{/snippet}
 	{#if isEacImageRip}
-		<p class="text-xs mb-3 text-warning-700 dark:text-warning-400">
+		<p class="text-sm mb-3 text-warning-700 dark:text-warning-400">
 			Image rip (single file) — EAC does not log gap handling for these extractions.
 		</p>
 	{/if}

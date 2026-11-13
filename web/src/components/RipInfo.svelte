@@ -117,6 +117,11 @@
 			</div>
 		</div>
 	{/snippet}
+	{#if isEacImageRip}
+		<p class="text-xs mb-3 text-warning-700 dark:text-warning-400">
+			Image rip (single file) — EAC does not log gap handling for these extractions.
+		</p>
+	{/if}
 	<div class="flex flex-col gap-4">
 		<InfoSegment
 			icon={IconCdCreateExchange}
